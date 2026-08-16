@@ -1,0 +1,54 @@
+{
+  "model_name": "random_forest",
+  "algorithm": "Random Forest Classifier",
+  "training_timestamp": "2026-08-17 00:56:50",
+  "features_count": 13,
+  "train_samples": 242,
+  "test_samples": 61,
+  "random_state": 42,
+  "test_split_ratio": 0.2,
+  "metrics": {
+    "accuracy": 0.8688524590163934,
+    "precision": 0.9148936170212766,
+    "recall": 0.9148936170212766,
+    "f1_score": 0.9148936170212766,
+    "confusion_matrix": [
+      [
+        10,
+        4
+      ],
+      [
+        4,
+        43
+      ]
+    ],
+    "classification_report": {
+      "0": {
+        "precision": 0.7142857142857143,
+        "recall": 0.7142857142857143,
+        "f1-score": 0.7142857142857143,
+        "support": 14.0
+      },
+      "1": {
+        "precision": 0.9148936170212766,
+        "recall": 0.9148936170212766,
+        "f1-score": 0.9148936170212766,
+        "support": 47.0
+      },
+      "accuracy": 0.8688524590163934,
+      "macro avg": {
+        "precision": 0.8145896656534954,
+        "recall": 0.8145896656534954,
+        "f1-score": 0.8145896656534954,
+        "support": 61.0
+      },
+      "weighted avg": {
+        "precision": 0.8688524590163934,
+        "recall": 0.8688524590163934,
+        "f1-score": 0.8688524590163934,
+        "support": 61.0
+      }
+    },
+    "roc_auc": 0.9088145896656534
+  }
+}
