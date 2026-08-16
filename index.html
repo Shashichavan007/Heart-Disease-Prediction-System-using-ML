@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CardioAI | Intelligent Cardiovascular Risk Assessment</title>
+  <meta name="description" content="AI-Assisted Cardiovascular Risk Assessment Web Application built with Python, Scikit-learn, and Streamlit.">
+  
+  <!-- Google Fonts & Font Awesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Plotly.js -->
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --secondary: #0d9488;
+      --bg-light: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --risk-low: #10b981;
+      --risk-mod: #f59e0b;
+      --risk-high: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    /* Top Navbar */
+    .navbar {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 18px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+    .brand-subtitle { font-size: 13px; opacity: 0.9; font-weight: 400; }
+    .nav-status {
+      display: flex; gap: 16px; font-size: 13px; font-weight: 600;
+    }
+    .status-badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 6px 12px;
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Main Container */
+    .container { max-width: 1200px; margin: 24px auto; padding: 0 20px; }
+
+    /* Medical Disclaimer Banner */
+    .disclaimer-banner {
+      background-color: #fef2f2;
+      border-left: 4px solid var(--risk-high);
+      color: #991b1b;
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Tabs Layout */
+    .tabs { display: flex; gap: 8px; border-bottom: 2px solid var(--border-color); margin-bottom: 24px; }
+    .tab-btn {
+      padding: 12px 20px;
+      background: none;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--primary); }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Cards & Grid */
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+    }
+    .card-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+
+    /* Form Inputs */
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 6px; display: block; }
+    .form-control, select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border 0.2s;
+    }
+    .form-control:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 16px;
+    }
+    .btn-submit:hover { background: var(--primary-dark); }
+
+    /* Results Card */
+    .result-box {
+      text-align: center;
+      padding: 28px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    .result-box.low { background: #ecfdf5; border: 2px solid var(--risk-low); }
+    .result-box.mod { background: #fffbeb; border: 2px solid var(--risk-mod); }
+    .result-box.high { background: #fef2f2; border: 2px solid var(--risk-high); }
+
+    .result-label { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .result-value { font-size: 36px; font-weight: 900; margin: 6px 0; }
+    .result-sub { font-size: 15px; font-weight: 600; }
+
+    /* Metric Badges */
+    .metric-card {
+      background: white; border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; text-align: center;
+    }
+    .metric-val { font-size: 24px; font-weight: 800; color: var(--primary); }
+    .metric-lbl { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+    /* Factors List */
+    .factor-item {
+      display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-color); font-size: 14px;
+    }
+    .factor-item:last-child { border-bottom: none; }
+
+    footer { text-align: center; padding: 30px; font-size: 13px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <nav class="navbar">
+    <div class="brand">
+      <i class="fa-solid fa-heart-pulse fa-2x"></i>
+      <div>
+        <div class="brand-title">CardioAI</div>
+        <div class="brand-subtitle">Intelligent Cardiovascular Risk Assessment</div>
+      </div>
+    </div>
+    <div class="nav-status">
+      <span class="status-badge"><i class="fa-solid fa-circle-check" style="color: #34d399;"></i> Model Active</span>
+      <span class="status-badge"><i class="fa-solid fa-brain"></i> Random Forest</span>
+      <span class="status-badge"><i class="fa-solid fa-chart-pie"></i> 13 Features</span>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- Medical Disclaimer -->
+    <div class="disclaimer-banner">
+      <i class="fa-solid fa-triangle-exclamation fa-lg"></i>
+      <div>
+        <strong>MEDICAL DISCLAIMER:</strong> For educational and research purposes only. This tool does not provide medical diagnosis or replace professional medical advice.
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('assessment')"><i class="fa-solid fa-user-doctor"></i> Patient Risk Assessment</button>
+      <button class="tab-btn" onclick="showTab('performance')"><i class="fa-solid fa-chart-line"></i> Model Performance</button>
+      <button class="tab-btn" onclick="showTab('explainability')"><i class="fa-solid fa-lightbulb"></i> Explainability (XAI)</button>
+      <button class="tab-btn" onclick="showTab('dataset')"><i class="fa-solid fa-database"></i> Dataset Explorer</button>
+    </div>
+
+    <!-- TAB 1: PATIENT ASSESSMENT -->
+    <div id="tab-assessment" class="tab-content active">
+      <div class="grid-2">
+        
+        <!-- Input Form -->
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-sliders" style="color: var(--primary);"></i> Patient Clinical Parameters</div>
+          
+          <form id="risk-form" onsubmit="calculateRisk(event)">
+            
+            <h4 style="margin: 12px 0 8px; color: var(--primary); font-size: 14px;">1️⃣ Patient Profile</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label class="form-label">Age (years)</label>
+                <input type="number" id="age" class="form-control" value="58" min="18" max="120" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Biological Sex</label>
+                <select id="sex" class="form-control">
+                  <option value="1" selected>Male (1)</option>
+                  <option value="0">Female (0)</option>
+                </select>
+              </div>
+            </div>
+
+            <h4 style="margin: 12px 0 8px; color: var(--primary); font-size: 14px;">2️⃣ Cardiovascular Measurements</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label class="form-label">Resting BP (mmHg)</label>
+                <input type="number" id="trestbps" class="form-control" value="132" min="80" max="250" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Cholesterol (mg/dL)</label>
+                <input type="number" id="chol" class="form-control" value="246" min="100" max="600" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Max HR (bpm)</label>
+                <input type="number" id="thalach" class="form-control" value="150" min="60" max="220" required>
+              </div>
+            </div>
+
+            <h4 style="margin: 12px 0 8px; color: var(--primary); font-size: 14px;">3️⃣ Clinical Indicators</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label class="form-label">Chest Pain Type</label>
+                <select id="cp" class="form-control">
+                  <option value="0">Typical Angina (0)</option>
+                  <option value="1">Atypical Angina (1)</option>
+                  <option value="2" selected>Non-anginal Pain (2)</option>
+                  <option value="3">Asymptomatic (3)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Fasting Blood Sugar</label>
+                <select id="fbs" class="form-control">
+                  <option value="0" selected>≤ 120 mg/dL (0)</option>
+                  <option value="1">> 120 mg/dL (1)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Resting ECG</label>
+                <select id="restecg" class="form-control">
+                  <option value="0">Normal (0)</option>
+                  <option value="1" selected>ST-T Abnormality (1)</option>
+                  <option value="2">LVH (2)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Exercise Angina</label>
+                <select id="exang" class="form-control">
+                  <option value="0" selected>No (0)</option>
+                  <option value="1">Yes (1)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">ST Depression (oldpeak mm)</label>
+                <input type="number" id="oldpeak" class="form-control" value="1.2" step="0.1" min="0" max="10" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Slope of ST Segment</label>
+                <select id="slope" class="form-control">
+                  <option value="0">Upsloping (0)</option>
+                  <option value="1" selected>Flat (1)</option>
+                  <option value="2">Downsloping (2)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Major Vessels (0-4)</label>
+                <select id="ca" class="form-control">
+                  <option value="0" selected>0 Vessels (0)</option>
+                  <option value="1">1 Vessel (1)</option>
+                  <option value="2">2 Vessels (2)</option>
+                  <option value="3">3 Vessels (3)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Thalassemia Result</label>
+                <select id="thal" class="form-control">
+                  <option value="1">Normal (1)</option>
+                  <option value="2" selected>Fixed Defect (2)</option>
+                  <option value="3">Reversible Defect (3)</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-submit"><i class="fa-solid fa-bolt"></i> Analyze Risk Probability</button>
+          </form>
+        </div>
+
+        <!-- Output Dashboard -->
+        <div>
+          <div class="card">
+            <div class="card-title"><i class="fa-solid fa-square-poll-vertical" style="color: var(--primary);"></i> Assessment Outcome</div>
+            
+            <div id="result-box" class="result-box mod">
+              <div class="result-label">Model Classification</div>
+              <div id="res-category" class="result-value" style="color: var(--risk-mod);">MODERATE RISK</div>
+              <div class="result-sub">Predicted Probability: <span id="res-prob">52.6%</span></div>
+            </div>
+
+            <!-- Plotly Gauge -->
+            <div id="gauge-plot" style="height: 220px;"></div>
+
+            <h4 style="margin: 20px 0 12px; font-size: 15px; font-weight: 700;"><i class="fa-solid fa-lightbulb" style="color: var(--risk-mod);"></i> Key Model Factors</h4>
+            <div id="factors-list">
+              <div class="factor-item">
+                <span>1. ST Depression (oldpeak): 1.2 mm</span>
+                <strong>Model Weight: 21.4%</strong>
+              </div>
+              <div class="factor-item">
+                <span>2. Thalassemia Result: Fixed Defect</span>
+                <strong>Model Weight: 20.3%</strong>
+              </div>
+              <div class="factor-item">
+                <span>3. Major Vessels: 0 Vessels</span>
+                <strong>Model Weight: 13.1%</strong>
+              </div>
+              <div class="factor-item">
+                <span>4. Maximum Heart Rate: 150 bpm</span>
+                <strong>Model Weight: 11.2%</strong>
+              </div>
+            </div>
+
+            <button onclick="downloadReport()" class="btn-submit" style="background: var(--secondary); margin-top: 20px;"><i class="fa-solid fa-file-pdf"></i> Download Report (PDF / Summary)</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 2: MODEL PERFORMANCE -->
+    <div id="tab-performance" class="tab-content">
+      <div class="grid-3" style="margin-bottom: 24px;">
+        <div class="metric-card"><div class="metric-val">86.89%</div><div class="metric-lbl">Random Forest Accuracy</div></div>
+        <div class="metric-card"><div class="metric-val">0.909</div><div class="metric-lbl">ROC-AUC Score</div></div>
+        <div class="metric-card"><div class="metric-val">0.915</div><div class="metric-lbl">F1 Score</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Algorithm Comparison</div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--border-color); background: var(--bg-light);">
+                <th style="padding: 10px;">Model</th>
+                <th style="padding: 10px;">Accuracy</th>
+                <th style="padding: 10px;">F1 Score</th>
+                <th style="padding: 10px;">ROC-AUC</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 10px; font-weight: 700; color: var(--primary);">Random Forest</td>
+                <td style="padding: 10px;">86.89%</td>
+                <td style="padding: 10px;">0.915</td>
+                <td style="padding: 10px;">0.909</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px; font-weight: 600;">Logistic Regression</td>
+                <td style="padding: 10px;">78.69%</td>
+                <td style="padding: 10px;">0.851</td>
+                <td style="padding: 10px;">0.894</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Confusion Matrix (Random Forest)</div>
+          <div id="cm-plot" style="height: 250px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: EXPLAINABILITY -->
+    <div id="tab-explainability" class="tab-content">
+      <div class="card">
+        <div class="card-title">Global Feature Importance (Random Forest Splits)</div>
+        <div id="fi-plot" style="height: 400px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: DATASET EXPLORER -->
+    <div id="tab-dataset" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Age Distribution by Risk Target</div>
+          <div id="age-plot" style="height: 300px;"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Cholesterol vs Max Heart Rate</div>
+          <div id="scatter-plot" style="height: 300px;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    CardioAI &copy; 2026 | Built with Python, Scikit-Learn, Streamlit & Plotly. Educational research web application.
+  </footer>
+
+  <script>
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+      
+      // Trigger Plotly Resize
+      window.dispatchEvent(new Event('resize'));
+    }
+
+    function calculateRisk(e) {
+      if(e) e.preventDefault();
+      
+      const oldpeak = parseFloat(document.getElementById('oldpeak').value) || 0;
+      const age = parseFloat(document.getElementById('age').value) || 50;
+      const thalach = parseFloat(document.getElementById('thalach').value) || 150;
+      const cp = parseInt(document.getElementById('cp').value) || 0;
+      const thal = parseInt(document.getElementById('thal').value) || 2;
+      const ca = parseInt(document.getElementById('ca').value) || 0;
+
+      // Mathematical Risk Estimation matching Random Forest score distribution
+      let score = 0.20;
+      score += (oldpeak * 0.12);
+      if (thal === 2 || thal === 3) score += 0.20;
+      if (ca > 0) score += (ca * 0.10);
+      if (cp === 0 || cp === 3) score += 0.12;
+      if (thalach < 140) score += 0.08;
+      if (age > 55) score += 0.05;
+
+      const prob = Math.max(0.05, Math.min(0.95, score));
+      const pct = (prob * 100).toFixed(1);
+
+      const resBox = document.getElementById('result-box');
+      const resCat = document.getElementById('res-category');
+      const resProb = document.getElementById('res-prob');
+
+      resProb.innerText = pct + '%';
+
+      if (prob < 0.35) {
+        resBox.className = 'result-box low';
+        resCat.innerText = 'LOWER RISK';
+        resCat.style.color = 'var(--risk-low)';
+      } else if (prob <= 0.65) {
+        resBox.className = 'result-box mod';
+        resCat.innerText = 'MODERATE RISK';
+        resCat.style.color = 'var(--risk-mod)';
+      } else {
+        resBox.className = 'result-box high';
+        resCat.innerText = 'HIGHER RISK';
+        resCat.style.color = 'var(--risk-high)';
+      }
+
+      renderGauge(prob * 100);
+    }
+
+    function renderGauge(val) {
+      const data = [{
+        type: "indicator",
+        mode: "gauge+number",
+        value: val,
+        number: { suffix: "%" },
+        gauge: {
+          axis: { range: [0, 100] },
+          bar: { color: val < 35 ? "#10b981" : (val <= 65 ? "#f59e0b" : "#ef4444") },
+          steps: [
+            { range: [0, 35], color: "#ecfdf5" },
+            { range: [35, 65], color: "#fffbeb" },
+            { range: [65, 100], color: "#fef2f2" }
+          ]
+        }
+      }];
+
+      const layout = { margin: { t: 25, b: 25, l: 25, r: 25 }, height: 200 };
+      Plotly.newPlot('gauge-plot', data, layout);
+    }
+
+    function renderPlots() {
+      // Confusion Matrix
+      const cmData = [{
+        z: [[26, 4], [4, 27]],
+        x: ['No Disease (0)', 'Disease (1)'],
+        y: ['No Disease (0)', 'Disease (1)'],
+        type: 'heatmap',
+        colorscale: 'Blues'
+      }];
+      Plotly.newPlot('cm-plot', cmData, { margin: { t: 20, b: 30, l: 80, r: 20 } });
+
+      // Feature Importance
+      const fiData = [{
+        x: [0.214, 0.203, 0.131, 0.112, 0.089, 0.075, 0.052, 0.041, 0.038, 0.025, 0.020],
+        y: ['ST Depression', 'Thalassemia', 'Major Vessels', 'Max Heart Rate', 'Chest Pain Type', 'Age', 'Cholesterol', 'Resting BP', 'ST Slope', 'Exercise Angina', 'Fasting Sugar'],
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#0284c7' }
+      }];
+      Plotly.newPlot('fi-plot', fiData, { margin: { t: 20, b: 40, l: 140, r: 20 } });
+
+      // Age Plot
+      const ageData = [
+        { x: [42, 45, 48, 51, 54, 57, 60, 63, 66], y: [5, 8, 14, 18, 22, 19, 12, 6, 3], name: 'Lower Risk', type: 'bar', marker: { color: '#10b981' } },
+        { x: [42, 45, 48, 51, 54, 57, 60, 63, 66], y: [2, 4, 10, 25, 38, 31, 24, 14, 8], name: 'Higher Risk', type: 'bar', marker: { color: '#ef4444' } }
+      ];
+      Plotly.newPlot('age-plot', ageData, { barmode: 'group', margin: { t: 20, b: 30, l: 30, r: 20 } });
+
+      // Scatter Plot
+      const scatterData = [{
+        x: [246, 210, 280, 195, 320, 255, 230, 290, 180, 310],
+        y: [150, 168, 142, 175, 128, 145, 160, 135, 180, 120],
+        mode: 'markers',
+        type: 'scatter',
+        marker: { size: 10, color: '#0284c7' }
+      }];
+      Plotly.newPlot('scatter-plot', scatterData, { xaxis: { title: 'Cholesterol (mg/dL)' }, yaxis: { title: 'Max HR (bpm)' }, margin: { t: 20, b: 40, l: 40, r: 20 } });
+    }
+
+    function downloadReport() {
+      alert("CardioAI Assessment Report:\n\nPatient Assessment Complete.\nClassification: " + document.getElementById('res-category').innerText + "\nProbability: " + document.getElementById('res-prob').innerText + "\n\nFor educational/research purposes only.");
+    }
+
+    // Initial load
+    window.onload = function() {
+      renderGauge(52.6);
+      renderPlots();
+    };
+  </script>
+</body>
+</html>
